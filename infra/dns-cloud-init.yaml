@@ -1,0 +1,26 @@
+#cloud-config
+# Installs BIND9 with a plain "forward everything to Azure DNS" config.
+# The real per-scenario config is pushed later by Set-AmplsDnsScenario.ps1.
+package_update: true
+packages:
+  - bind9
+  - bind9-dnsutils
+write_files:
+  - path: /tmp/named.conf.bootstrap
+    content: |
+      options {
+        directory "/var/cache/bind";
+        recursion yes;
+        allow-query { any; };
+        allow-recursion { any; };
+        forwarders { 168.63.129.16; };
+        forward only;
+        dnssec-validation no;
+        listen-on { any; };
+        listen-on-v6 { none; };
+      };
+      include "/etc/bind/named.conf.default-zones";
+runcmd:
+  - cp /tmp/named.conf.bootstrap /etc/bind/named.conf
+  - systemctl enable named
+  - systemctl restart named
